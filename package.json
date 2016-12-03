@@ -1,0 +1,9 @@
+{
+  "dependencies": {
+    "cheerio": "latest",
+    "express": "latest",
+    "request": "latest",
+    "socket.io": "latest",
+    "watson-developer-cloud": "^0.9.6"
+  }
+}

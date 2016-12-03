@@ -1,0 +1,320 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>Manutravelinsurance</title>
+  <meta name="description" content="mobile first, app, web app, responsive, admin dashboard, flat, flat ui">
+  <meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1">
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/twitter-bootstrap/3.3.4/css/bootstrap-theme.css">
+  <link rel="stylesheet" href="css/bootstrap-responsive.min.css">
+  <link rel="stylesheet" type="text/css" href="css/app-css.v1.css">
+  <link rel="stylesheet" type="text/css" href="css/custom-style.css">
+  <link rel="stylesheet" href="https://ajax.googleapis.com/ajax/libs/jqueryui/1.11.3/themes/smoothness/jquery-ui.css" />
+  <link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet'  type='text/css'>
+
+  <script type="text/javascript" src="https://maps.googleapis.com/maps/api/js?libraries=places"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/2.1.3/jquery.min.js"> </script>
+  <script src="https://code.jquery.com/ui/1.11.4/jquery-ui.js"></script>
+  <script src="typehead/src/bootstrap-typeahead.js"> </script>
+  <script src="https://cdn.firebase.com/js/client/2.2.2/firebase.js"></script>
+  <script src="js/bootstrap.min.js"></script>
+  <script src="https://cdn.socket.io/socket.io-1.3.3.js"></script>
+  <script type="text/javascript" src="oauth-js/dist/oauth.js"></script>
+  <script src="js/init.js"></script>
+  <style id="background-img"> 
+  html { 
+    background: url(trail.png) no-repeat center center fixed; 
+    -webkit-background-size: cover;
+    -moz-background-size: cover;
+    -o-background-size: cover;
+    background-size: cover;
+  }
+  </style>
+</head>
+<body>
+  <script> 
+  window.fbAsyncInit = function() { 
+    FB.init({ 
+      appId : '674374179333404', 
+      xfbml : true, version : 'v2.2' 
+    }); 
+  }; 
+  (function(d, s, id){ 
+    var js, fjs = d.getElementsByTagName(s)[0]; 
+    if (d.getElementById(id)) {return;} 
+    js = d.createElement(s); js.id = id; 
+    js.src = "//connect.facebook.net/en_US/sdk.js"; 
+    fjs.parentNode.insertBefore(js, fjs); 
+  }(document, 'script', 'facebook-jssdk'));
+  </script>
+
+  <nav class="navbar navbar-default" role="navigation" style="background-color: rgb(0, 90, 48);">
+    <a class="btn btn-link navbar-btn pull-left" onclick="history.back();" style="display: none;" id="back-button"><i class="icon-chevron-left"></i></a>
+    <a class="btn btn-link navbar-btn pull-right" onclick="history.forward();"><i class="icon-plus" style="display: none;" id="forward-button"></i></a>
+    <div class="navbar-header" id="nav-header" style=" background: rgb(0, 90, 48);">
+      <span class="navbar-brand" style="background-color: rgb(0, 90, 48); border: 0;">Travel Toolkit</span>
+    </div>
+  </nav>
+
+  <div id="planning-page" style="display: none;">
+    <section class="panel-success">
+      <h4 class="panel-heading" style="margin-top: 20%; text-align: center;"> 
+        <strong> Enter Your Destinations </strong>
+      </h4>
+    </section>
+    <ul class="list-group" id="selected-destinations"></ul>
+    <input id="search" style="width: 94%; margin-left: 1%;" type="text" placeholder="Search...">
+    <button type="submit" class="btn btn-success btn-lg" onclick="sendToAlgorithm()" style="background-color: rgba(99, 203, 106, 0.83);margin-left: 20%;">Get Ratings</button>
+    <button type="submit" class="btn btn-danger btn-lg" style="background-color: rgba(217, 83, 79, 0.7);" onclick="clearDestinations()">Reset</button>
+  </div>
+
+  <div id="landing">
+    <a class="btn btn-block btn-lg btn-success" style="margin-top: 33%;" onclick="show('planning-page','landing'); onPlanningPageEntry();">Plan a Trip </a>
+    <div id="get-trip" style="display: none;">
+      <section class="panel text-small">
+        <header class="panel-heading">Trip Information</header>
+        <div class="control-group" id="country-search">
+          <label class="control-label">Country: </label>
+          <div class="controls">
+            <select id="country-container">
+            </select>
+          </div>
+ 
+        </div>
+      </section>
+    </div>
+    <a class="btn btn-block btn-lg btn-success" style="margin-top: 7%;" href="#" onclick="show('main-page','landing'); getLocation();">On a Trip </a>
+  </div>
+
+  <div id="main-page" style="display:none">
+    <div id="tripInfo">
+
+      <h4 style="text-align: center;" id="country-ranks"></h4>
+
+      <section class="toolbar clearfix m-t-large m-b" id="country-icons">
+        <a href="#" class="btn btn-danger btn-circle" style="margin-left: 13%;"><i class="icon-heart" ></i>Health<b class="badge bg-black" id="health-rating"></b></a>
+        <a href="#" class="btn btn-success btn-circle"><i class="icon-bolt"></i>Accident<b class="badge bg-info" id="accident-rating"></b></a>
+        <a href="#" class="btn btn-info btn-circle" ><i class="icon-legal"></i>Crime<b class="badge bg-info" id="terrorism-rating"></b></a>
+      </section>
+
+    </div>
+
+    <center><div id="result"></div></center>
+
+    <div id="extraInfo" style="display:none">
+      <section class="panel text-small" id="medical">
+        <header class="panel-heading" style="text-align: center;">Medical <i class="icon-mail-forward" style="float: right;" onclick="goTo('terrorism')"></i>
+        </header>
+        <div class="row-fluid" style="height: 300px; overflow: auto;">
+         <h4>
+          <span class="label label-large bg-info" id="injury-rate" style="text-align: center;"></span> Death by Injury 
+        </h4>
+        <div class="span4" id="injury">
+        </div>
+        <h4>
+          <span class="label label-large bg-info" id="disease-rate" style="text-align: center;"></span> Injury/Death by communicable diseases and nutritional conditions 
+        </h4>
+        <div class="span4" id="disease">
+        </div>
+        <h4>
+          <span class="label label-large bg-info" id="unemployment-rate" style="text-align: center;"></span></i> Unemployment Rate 
+        </h4>
+        <div class="span4" id="unemployment">
+        </div>
+        <h4>
+          <span class="label label-large bg-info" id="water-rate" style="text-align: center;"></span></i> Human Development Index
+        </h4>
+        <div class="span4" id="water">
+        </div>
+        <h4>
+          <span class="label label-large bg-info" id="crowd-rate" style="text-align: center;"></span></i> User Rating 
+        </h4>
+        <div class="span4">
+          What other users have rated this category in this location.
+        </div>
+      </div>
+    </section>
+    <div id="otherInfoPages" style="display: none;"> 
+      <section class="panel text-small">
+        <header class="panel-heading" id="other-pages-title" style="text-align: center;"> </header>
+        <h4 id="other-sub-title">
+        </h4>
+        <div class="span4" id="other-descrip">
+        </div>
+        <div class="control-group" id="airline-search" style="display: none;">
+          <label class="control-label">Search Airlines</label>
+          <div class="controls">
+            <select id="airline-container">
+            </select>
+          </div>
+          <a href="#" class="btn btn-default btn-sm" onclick="airlineInfo()">Submit</a>
+        </div>
+        <h4>
+          <span class="label label-large bg-info" id="other-crowd-rate" style="text-align: center;"></span></i> User Rating 
+        </h4>
+        <div class="span4">
+          What other users have rated this category in this location.
+        </div>
+      </section>
+    </div>
+  </div>
+
+  <div id="happiness" style="display: none;">
+    <h4 style="text-align: center;" id="country-happiness"> Overall Happiness of Country </h4>
+    <section class="toolbar clearfix m-t-large m-b" id="happiness-icons">
+      <a href="#" class="btn btn-danger btn-circle" style="margin-left: 20%;"><i class="icon-smile" style="background-color: #F4083E;"></i>Happy<b class="badge bg-black" id="happy-rating"></b></a>
+      <a href="#" class="btn btn-primary btn-circle"><i class="icon-frown" style="background-color: #2ecc71;"></i>Sad<b class="badge bg-info" id="sad-rating"></b></a>
+    </section>
+    <section class="panel-default text-small" id="sentiment-src-container">
+      <h4 class="panel-heading" style="text-align: center;" id="sentiment-src-header"> 
+        <div onclick="toggleCollapse('sentiment-src-header','sentiment-src')"> 
+          <div class="custom-collapse" style="float: left; color: black;"> [ <i class="icon-plus"></i> ] </div> 
+          <div class="custom-collapse" style="float: left; color: black; display: none;"> [ <i class="icon-minus"></i> ] </div> 
+          <strong> Sentiment Sources </strong> <br> 
+        </div>
+      </h4>
+      <div class="span4" id="sentiment-src" style="display: none;">
+        <section class="toolbar clearfix m-t-large m-b" id="src-icons">
+          <a href="#" class="btn btn-danger btn-circle" style="margin-left: 13%;" id="facebook"><i class="icon-facebook-sign" style="background-color: rgb(60, 90, 153);"></i><b class="badge bg-black"></b></a>
+          <a href="#" class="btn btn-info btn-circle"><i class="icon-google-plus-sign" style="background-color: rgb(223, 74, 50);"></i><b class="badge bg-info"></b></a>
+          <a href="#" class="btn btn-success btn-circle" id="twitter" data-placement="left"><i class="icon-twitter-sign" style="background-color: #55acee;"></i><b class="badge bg-info"></b></a>
+        </section>
+      </div>
+    </section>
+  </div>
+
+  <div id="insights-container" style="display: none;">
+    <section class="panel-info text-small">
+      <h4 class="panel-heading" style="text-align: center;" id="insights-header"> 
+        <div onclick="toggleCollapse('insights-header','insights')"> 
+          <div class="custom-collapse" style="float: left; color: black;"> [ <i class="icon-plus"></i> ] </div> 
+          <div class="custom-collapse" style="float: left; color: black; display: none;"> [ <i class="icon-minus"></i> ] </div> 
+          <strong id="country-insights"> Personality Insights of Country </strong> <br> 
+        </div>
+      </h4>
+      <div class="span4" id="insights" style="display: none;">
+      </div>
+    </section>
+  </div>
+
+  <div id="dangers-container" style="display: none;">
+    <section class="panel-danger text-small">
+      <h4 class="panel-heading" style="text-align: center;" id="dangers-header"> 
+        <div onclick="toggleCollapse('dangers-header','dangers-body')"> 
+          <div class="custom-collapse" style="float: left; color: black;"> [ <i class="icon-plus"></i> ] </div> 
+          <div class="custom-collapse" style="float: left; color: black; display: none;"> [ <i class="icon-minus"></i> ] </div> 
+          <strong> Warnings & Dangers <br>  </strong> 
+        </div>
+      </h4>
+      <div class="span4" id="dangers-body" style="display: none;">
+      </div>
+    </section>
+  </div>
+
+  <div id="recommendations" style="display: none;"> 
+    <section class="panel-success text-small">
+      <h4 class="panel-heading" style="text-align: center;" id="recommendations-header"> 
+        <div onclick="toggleCollapse('recommendations-header','recommendations-container')"> 
+          <div class="custom-collapse" style="float: left; color: black;"> [ <i class="icon-plus"></i> ] </div> 
+          <div class="custom-collapse" style="float: left; color: black; display: none;"> [ <i class="icon-minus"></i> ] </div> 
+          <strong> Travel Insurance <br>  </strong> 
+        </div>
+      </h4>
+      <div class="span4" id="recommendations-container" style="display: none;">
+      </div>
+    </section>
+    <a href="#" class="btn btn-success" style="margin-left: 30%;" id="get-covered" onclick="show('home', 'recommendations'); showSuccess();"> Get Covered </a>
+  </div>
+
+  <div class="row-fluid m-t-small" id="home" style="display: none;">
+    <div class="span6">
+      <div class="row-fluid row-2-phone">  
+        <div class="span6">
+          <section class="panel">
+            <header class="panel-heading">
+              Location Reviews
+              <span class="label label-large bg-default" id="msg-count"></span>
+            </header>
+            <div class="latest_post_container">
+              <ul class="latest_postnav" style="height: 192px; overflow: auto;">
+                <li style="margin-top: 0px;" >
+
+                </li>
+                <small class="block">
+                </small>
+              </ul>
+              <small class="block">
+              </small>
+            </div>
+            <small class="block">
+            </small>
+          </section>
+        </div>
+        <small class="block">
+          <div class="span6">
+            <section class="panel"><header class="panel-heading bg-white"><div class="text-center h5">Total: <strong id="total-coverage"></strong>
+            </div>
+          </header>
+          <div class="pull-in text-center">
+            <div class="inline">
+              <div class="easypiechart easyPieChart" data-percent="100" data-bar-color="rgb(0, 90, 48)" style="width: 130px; height: 130px; line-height: 130px;">
+                <span class="h2">100</span>%
+                <div class="easypie-text text-muted">Total Coverage</div>
+                <canvas width="390" height="390" style="width: 130px; height: 130px;"></canvas>
+              </div>
+            </div>
+          </div>
+        </section>
+      </div>
+    </small>
+  </div>
+  <a href="#" class="btn btn-success" style="margin-left: 30%;"> Submit a Claim </a>
+</div>
+</div>
+
+
+<div id="extraInfoHappiness" style="display: none;"> 
+  <section class="panel text-small" style="display: none;" id="twitter-info">
+    <div id="info-tweets" style="margin-left: 20%;">
+      <header class="panel-heading">Twitter <i class="icon-mail-forward" style="float: right;" onclick="show('happy-twitter', 'info-tweets');"></i> </header>
+      <div class="span4" style="overflow: auto;">
+        Tweets from this location are analyzed and determined to either have a happy or sad sentiment. After a substantial amount of tweets have been analyzed, the algorithm determines the general outlook of the people who communicate about the location.
+      </div>
+    </div> 
+    <div id="happy-twitter" style="display: none;">
+      <header class="panel-heading" style="text-align: center; "> <i class="icon-mail-reply" style="float: left;" onclick="show('info-tweets', 'happy-twitter');"></i>  Happy tweets <i class="icon-mail-forward" style="float: right;" onclick="show('sad-twitter', 'happy-twitter');"></i></header>
+      <div id="happy-tweets" class="span4" style="overflow: auto; height: 300px; margin-left: 20%; width: 90%;"> </div>
+    </div>
+    <div id="sad-twitter" style="display: none;">
+      <header class="panel-heading" style="text-align: center;"><i class="icon-mail-reply" style="float: left;" onclick="show('happy-twitter', 'sad-twitter');"></i>  Sad tweets</header>
+      <div id="sad-tweets" class="span4" style="height: 300px; overflow: auto; margin-left: 20%; width: 90%;"> </div>
+    </div>
+  </section>
+  <section class="panel text-small" style="display: none;" id="facebook-info">
+    <div id="info-fb-posts" style="height: 300px;">
+      <header class="panel-heading">Facebook <i class="icon-mail-forward" style="float: right;" onclick="show('happy-fb', 'info-fb-posts');"></i> </header>
+      <div class="span4">
+        Facebook posts made within places (shops, schools, organizations, etc.) surrounding the given location are analyzed and determined to either have a happy or sad sentiment. After a substantial amount of posts have been analyzed, the algorithm determines the general outlook of the people who communicate about the location.
+      </div>
+    </div> 
+    
+    <div id="happy-fb" style="display: none;">
+      <header class="panel-heading" style="text-align: center;"> <i class="icon-mail-reply" style="float: left;" onclick="show('info-fb-posts', 'happy-fb');"></i>  Happy FB Posts <i class="icon-mail-forward" style="float: right;" onclick="show('sad-fb', 'happy-fb');"></i></header>
+      <div id="happy-fb-posts" class="span4" style="height: 300px; overflow: auto;"> </div>
+    </div>
+    
+    <div id="sad-fb" style="display: none;">
+      <header class="panel-heading" style="text-align: center;"><i class="icon-mail-reply" style="float: left;" onclick="show('happy-fb', 'sad-fb');"></i>  Sad FB Posts</header>
+      <div id="sad-fb-posts" class="span4" style="height: 300px; overflow: auto;"> </div>
+    </div>
+  </section>
+</div>
+</div>
+</body>
+<script src="js/countryRating.js"></script>
+<script src= "js/textsummary.js"></script>
+<script src= "js/sentiment.js"></script>
+<script src= "js/algorithm.js"></script>
+<script src="js/app-js.v1.js"></script>
+</html>
